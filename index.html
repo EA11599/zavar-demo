@@ -103,6 +103,16 @@ ol.steps li::before{content:counter(s);font-family:var(--cond);font-weight:700;f
 ol.steps li.now::before{color:var(--bronze)}
 ol.steps b{display:block;font-weight:600}
 ol.steps span{color:var(--muted);font-size:.93rem}
+details.how{border-left:3px solid var(--bronze);background:var(--bg);margin:12px 0 0;padding:0 12px;font-size:.92rem}
+details.how summary{cursor:pointer;font-weight:600;color:var(--bronze);padding:8px 0;list-style-position:inside}
+details.how[open]{padding-bottom:10px}
+details.how p{margin:0 0 8px;max-width:72ch}
+details.how ul{margin:0 0 8px;padding-left:18px}
+details.how li{margin-bottom:4px}
+details.how .f{font-family:var(--cond);font-size:1.05rem;background:var(--panel);border:1px solid var(--line);padding:6px 10px;margin:4px 0 8px;overflow-x:auto;white-space:nowrap}
+.sheet details.how{margin:0 18px 16px}
+.toggle-notes{margin-top:12px;background:transparent;color:var(--bronze);border:2px solid var(--bronze)}
+ol.steps details.how{margin-top:10px}
 footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
 @media (prefers-reduced-motion:reduce){.tint .pin{transition:none}}
 </style>
@@ -115,7 +125,7 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
     <h1>Provjera parametara zavarivanja</h1>
     <p>Upiši stvarne uvjete na radnom mjestu i parametre iz WPS-a. Program procjenjuje rizik od grešaka i zaostalih naprezanja te predlaže korekciju parametara.</p>
   </div>
-  <div class="stamp">Demo verzija</div>
+  <div style="text-align:right"><div class="stamp">Demo verzija</div><br><button type="button" class="toggle-notes" id="toggleNotes" aria-pressed="false">Prikaži sve napomene</button></div>
 </header>
 
 <div class="grid">
@@ -132,6 +142,14 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
         <label>Relativna vlažnost, %<input type="number" id="RH" value="70" step="1" min="5" max="100"></label>
       </div>
       <p class="hint">Mjeri se kontaktnim termometrom ili termokredom uz mjesto zavarivanja, a ne "po osjećaju".</p>
+      <details class="how"><summary>Zašto je ovo ključni ulaz</summary>
+        <p>Isti WPS na komadima različite početne temperature daje različito vrijeme hlađenja, a time i drugačiju mikrostrukturu i rizik od pukotina. Nazivno "predgrijano" nije dovoljno: program zato traži stvarno izmjerenu temperaturu.</p>
+        <ul>
+          <li>Mjerenje prema praksi iz EN ISO 13916: na udaljenosti do 75 mm od žlijeba, s obje strane spoja, neposredno prije zavarivanja.</li>
+          <li>Okolna temperatura i vlažnost služe za izračun rosišta, tj. za procjenu može li se na hladnom komadu kondenzirati vlaga.</li>
+          <li>U pokusima će se koristiti umjereni instrumenti, jer greška mjerenja ulaza postaje greška preporuke.</li>
+        </ul>
+      </details>
     </fieldset>
     <fieldset>
       <legend>Materijal i spoj</legend>
@@ -154,6 +172,11 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
           <select id="restr"><option value="low">Mala</option><option value="mid" selected>Srednja</option><option value="high">Velika</option></select>
         </label>
       </div>
+      <details class="how"><summary>Odakle su podaci o materijalu</summary>
+        <p>Odabirom materijala upisuju se tipične vrijednosti Re, CE, propisanog predgrijavanja i ciljanog raspona t8/5. U stvarnoj primjeni vrijednosti se preuzimaju iz certifikata materijala (EN 10204 3.1), a CE se računa iz stvarnog kemijskog sastava:</p>
+        <div class="f">CE = C + Mn/6 + (Cr + Mo + V)/5 + (Ni + Cu)/15</div>
+        <p>Ciljani rasponi t8/5 u sljedećoj verziji bit će povezani s izvorom (preporuke proizvođača čelika i literatura). Ukliještenost se za sada bira opisno; kasnije se može vezati uz geometriju i način stezanja.</p>
+      </details>
     </fieldset>
     <fieldset>
       <legend>Parametri zavarivanja (WPS)</legend>
@@ -166,6 +189,10 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
         <label>Brzina v, cm/min<input type="number" id="v" value="25" step="1"></label>
         <label>Propisano predgrijavanje, °C<input type="number" id="Tp" value="50" step="5"></label>
       </div>
+      <details class="how"><summary>Kako se parametri koriste</summary>
+        <p>Parametri odgovaraju onima iz WPS-a. U pokusima će se bilježiti stvarno postignute vrijednosti (struja i napon s uređaja, brzina iz duljine zavara i vremena), jer se one razlikuju od nazivnih, osobito kod ručnog zavarivanja.</p>
+        <p>Planirana nadogradnja: orijentacijski izračun potrebnog predgrijavanja po EN 1011-2 (CET metoda, uz razred vodika dodatnog materijala) koji se uspoređuje s upisanom vrijednošću.</p>
+      </details>
     </fieldset>
   </form>
 
@@ -185,13 +212,39 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
         <div class="metric"><b id="mSL">–</b><span>uzdužno zaostalo naprezanje, MPa (pojednostavljeno)</span></div>
         <div class="metric"><b id="mST">–</b><span>poprečno zaostalo naprezanje, MPa (pojednostavljeno)</span></div>
       </div>
+      <details class="how"><summary>Kako se računaju ove vrijednosti</summary>
+        <p><b>Unos topline</b> (k = 0,8 za MAG i REL, 0,6 za TIG; v u mm/s):</p>
+        <div class="f">Q = k · U · I / v · 10⁻³ &nbsp;[kJ/mm]</div>
+        <p><b>Vrijeme hlađenja t8/5</b> prema EN 1011-2, dodatak D, uz faktor oblika F (0,9 sučeljeni, 0,67 T-spoj):</p>
+        <div class="f">3D: t8/5 = (6700 − 5T₀) · Q · [1/(500 − T₀) − 1/(800 − T₀)] · F₃</div>
+        <div class="f">2D: t8/5 = (4300 − 4,3T₀) · 10⁵ · (Q²/d²) · [(1/(500 − T₀))² − (1/(800 − T₀))²] · F₂</div>
+        <p>Koji izraz vrijedi, određuje prijelazna debljina d<sub>t</sub>: za d &lt; d<sub>t</sub> toplina se odvodi dvodimenzionalno (tanji lim), inače trodimenzionalno.</p>
+        <p><b>Rosište</b> se računa Magnusovom formulom iz okolne temperature i vlažnosti; ako je komad hladniji od rosišta + 3 °C, postoji rizik kondenzacije i unosa vodika.</p>
+        <p><b>Zaostala naprezanja</b> u ovoj verziji nisu izračun nego gornja granica iz literature. Plan je zamijeniti ih rezultatima mjerenja (metoda bušenja rupe prema ASTM E837 ili rendgenska difrakcija, ovisno o opremi katedre) i MKE simulacijama.</p>
+      </details>
       <p class="hint" style="padding:0 18px">Zaostala naprezanja su za sada gruba procjena (uzdužno ≈ Re, poprečno ovisno o ukliještenosti) i bit će zamijenjena rezultatima mjerenja.</p>
       <div class="causes" id="causes"></div>
+      <details class="how"><summary>Kako nastaje indeks rizika</summary>
+        <p>Svaki od pet uzroka dobiva ocjenu od 0 do 1 (stupci iznad) i težinu. Indeks se računa kao vjerojatnost da se ostvari barem jedan nepovoljan uzrok:</p>
+        <div class="f">R = 100 · [1 − Π (1 − wᵢ · rᵢ)]</div>
+        <ul>
+          <li>Prebrzo hlađenje: t8/5 ispod ciljanog raspona, pojačano višim CE (w = 0,65).</li>
+          <li>Presporo hlađenje: t8/5 iznad raspona (w = 0,35).</li>
+          <li>Komad hladniji od propisanog predgrijavanja (w = 0,5).</li>
+          <li>Moguća kondenzacija vlage (w = 0,45).</li>
+          <li>Ukliještenost, pojačana višim CE (w = 0,35).</li>
+        </ul>
+        <p>Težine su u ovoj verziji postavljene inženjerskom procjenom i služe samo za prikaz. U fazi 3 zamjenjuje ih model strojnog učenja naučen na rezultatima pokusa, pa će indeks odražavati izmjerene posljedice, a ne pretpostavke.</p>
+      </details>
     </div>
 
     <div class="sheet">
       <h2>Preporuka za zavarivača</h2>
       <div class="reco" id="reco"></div>
+      <details class="how"><summary>Kako program traži preporuku</summary>
+        <p>Uvjeti koje zavarivač ne može mijenjati (materijal, debljina, vlažnost) ostaju fiksni. Program isprobava kombinacije onoga što može mijenjati: struju (±20 %), brzinu (±30 %) i temperaturu predgrijavanja, te bira kombinaciju s najmanjim rizikom uz što manje odstupanje od WPS-a.</p>
+        <p>Poznata ograničenja koja se rješavaju u sljedećim verzijama: napon se treba mijenjati zajedno sa strujom, promjena brzine mijenja geometriju zavara (npr. debljinu kutnog zavara), a gornja granica predgrijavanja mora ovisiti o materijalu. U konačnoj verziji pretraga se radi nad naučenim modelom, a sve preporuke ostaju unutar granica odobrenog WPS-a.</p>
+      </details>
     </div>
   </div>
 </div>
@@ -213,6 +266,14 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
     </div>
   </div>
   <div class="chartbox"><svg id="chart" viewBox="0 0 640 270" role="img" aria-label="Vrijeme hlađenja t8/5 u ovisnosti o temperaturi komada"></svg></div>
+  <details class="how"><summary>Kako će se ovo provjeriti pokusom</summary>
+    <p>Ploče iste šarže dijele se u skupine koje se prije zavarivanja dovedu na različite početne temperature (npr. hlađene, sobne, zagrijane), dok se svi ostali parametri drže jednakima, po mogućnosti uz automatsko vođenje pištolja kako bi se isključio utjecaj ruke zavarivača.</p>
+    <ul>
+      <li>Tijekom zavarivanja: termoparovima se snima stvarni toplinski ciklus, čime se provjerava izračunato t8/5.</li>
+      <li>Nakon zavarivanja: mjerenje zaostalih naprezanja, kutne deformacije i tvrdoće u ZUT-u, uz nerazorna ispitivanja na greške.</li>
+      <li>Ako se izmjerene razlike između skupina poklope s predviđenima, to je prva potvrda modela.</li>
+    </ul>
+  </details>
 </section>
 
 <!-- PLAN -->
@@ -220,10 +281,14 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
   <h2>Plan razvoja</h2>
   <p>Ova stranica je prva faza. Pravila procjene ovdje su pojednostavljena i služe za prikaz ideje; u kasnijim fazama zamjenjuje ih model treniran na pokusima provedenim na Katedri za zavarivanje.</p>
   <ol class="steps">
-    <li class="now"><b>Kalkulator i sučelje</b><span>Unos topline i t8/5 prema EN 1011-2, rosište, provjera predgrijavanja, prototip preporuke.</span></li>
-    <li><b>Planirani pokusi</b><span>Namjerno izazivanje nepovoljnih uvjeta (hladan ili vlažan komad, prevelik ili premalen unos topline) i mjerenje zaostalih naprezanja i grešaka.</span></li>
-    <li><b>Model strojnog učenja</b><span>Treniranje modela na izmjerenim podacima; zamjena demo pravila stvarnim predviđanjem.</span></li>
-    <li><b>Prilagodba zavarivaču</b><span>Uključivanje stvarno postignutih parametara pojedinog zavarivača u preporuku.</span></li>
+    <li class="now"><b>Kalkulator i sučelje</b><span>Unos topline i t8/5 prema EN 1011-2, rosište, provjera predgrijavanja, prototip preporuke.</span>
+      <details class="how"><summary>Kako se radi</summary><p>Web-aplikacija u HTML-u i JavaScriptu, bez instalacije, objavljena preko GitHub Pages. Služi kao sučelje koje ostaje isto dok se "mozak" u pozadini mijenja.</p></details></li>
+    <li><b>Planirani pokusi</b><span>Namjerno izazivanje nepovoljnih uvjeta (hladan ili vlažan komad, prevelik ili premalen unos topline) i mjerenje zaostalih naprezanja i grešaka.</span>
+      <details class="how"><summary>Kako se radi</summary><p>Plan pokusa (faktorski ili Taguchijev) da se s najmanje uzoraka obuhvati utjecaj temperature komada, unosa topline, vlažnosti i predgrijavanja. Svaki uzorak dobiva zapis ulaza i izmjerenih rezultata, što čini skup podataka za fazu 3.</p></details></li>
+    <li><b>Model strojnog učenja</b><span>Treniranje modela na izmjerenim podacima; zamjena demo pravila stvarnim predviđanjem.</span>
+      <details class="how"><summary>Kako se radi</summary><p>Zbog malog broja uzoraka kao ulazi koriste se i fizikalne veličine (Q, t8/5, CE), a ne samo sirovi parametri. Usporedit će se jednostavniji modeli (regresija, random forest) s neuronskom mrežom, uz unakrsnu validaciju. Skup podataka može se proširiti MKE simulacijama.</p></details></li>
+    <li><b>Prilagodba zavarivaču</b><span>Uključivanje stvarno postignutih parametara pojedinog zavarivača u preporuku.</span>
+      <details class="how"><summary>Kako se radi</summary><p>Za svakog zavarivača bilježi se razlika između zadanih i stvarno postignutih parametara (npr. sustavno brže vođenje). Program tu razliku uzima u obzir, pa preporuka postaje prilagođena osobi, a ne samo WPS-u.</p></details></li>
   </ol>
 </section>
 
@@ -409,6 +474,12 @@ function renderCompare(p){
 $('mat').addEventListener('change',()=>{
   const m = MAT[$('mat').value];
   $('Re').value=m.Re; $('CE').value=m.CE; $('Tp').value=m.Tp; render();
+});
+$('toggleNotes').addEventListener('click',e=>{
+  const open = e.currentTarget.getAttribute('aria-pressed')!=='true';
+  document.querySelectorAll('details.how').forEach(d=>d.open=open);
+  e.currentTarget.setAttribute('aria-pressed',open);
+  e.currentTarget.textContent = open ? 'Sakrij sve napomene' : 'Prikaži sve napomene';
 });
 document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',render));
 render();
