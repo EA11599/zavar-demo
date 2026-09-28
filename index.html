@@ -220,7 +220,7 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
         <div class="f">2D: t8/5 = (4300 − 4,3T₀) · 10⁵ · (Q²/d²) · [(1/(500 − T₀))² − (1/(800 − T₀))²] · F₂</div>
         <p>Koji izraz vrijedi, određuje prijelazna debljina d<sub>t</sub>: za d &lt; d<sub>t</sub> toplina se odvodi dvodimenzionalno (tanji lim), inače trodimenzionalno.</p>
         <p><b>Rosište</b> se računa Magnusovom formulom iz okolne temperature i vlažnosti; ako je komad hladniji od rosišta + 3 °C, postoji rizik kondenzacije i unosa vodika.</p>
-        <p><b>Zaostala naprezanja</b> u ovoj verziji nisu izračun nego gornja granica iz literature. Plan je zamijeniti ih rezultatima mjerenja (metoda bušenja rupe prema ASTM E837 ili rendgenska difrakcija, ovisno o opremi katedre) i MKE simulacijama.</p>
+        <p><b>Zaostala naprezanja</b> u ovoj verziji nisu izračun nego gornja granica iz literature. Plan je zamijeniti ih rezultatima mjerenja (metoda bušenja rupe prema ASTM E837 ili rendgenska difrakcija, ovisno o dostupnoj opremi) i MKE simulacijama u CalculiX-u (vidi plan razvoja).</p>
       </details>
       <p class="hint" style="padding:0 18px">Zaostala naprezanja su za sada gruba procjena (uzdužno ≈ Re, poprečno ovisno o ukliještenosti) i bit će zamijenjena rezultatima mjerenja.</p>
       <div class="causes" id="causes"></div>
@@ -279,14 +279,23 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
 <!-- PLAN -->
 <section class="plan">
   <h2>Plan razvoja</h2>
-  <p>Ova stranica je prva faza. Pravila procjene ovdje su pojednostavljena i služe za prikaz ideje; u kasnijim fazama zamjenjuje ih model treniran na pokusima provedenim na Katedri za zavarivanje.</p>
+  <p>Ova stranica je prva faza. Pravila procjene ovdje su pojednostavljena i služe za prikaz ideje; u kasnijim fazama zamjenjuju ih rezultati MKE simulacija i model treniran na eksperimentalnim podacima.</p>
   <ol class="steps">
     <li class="now"><b>Kalkulator i sučelje</b><span>Unos topline i t8/5 prema EN 1011-2, rosište, provjera predgrijavanja, prototip preporuke.</span>
       <details class="how"><summary>Kako se radi</summary><p>Web-aplikacija u HTML-u i JavaScriptu, bez instalacije, objavljena preko GitHub Pages. Služi kao sučelje koje ostaje isto dok se "mozak" u pozadini mijenja.</p></details></li>
+    <li><b>MKE simulacija u CalculiX-u</b><span>Toplinsko-mehanička simulacija zavarivanja kojom se umjesto pretpostavke dobiva stvarna raspodjela temperatura i zaostalih naprezanja.</span>
+      <details class="how"><summary>Kako se radi</summary>
+        <p>CalculiX je besplatan program za metodu konačnih elemenata, sa sintaksom ulaznih datoteka bliskom Abaqusu. Simulacija se provodi u dva spregnuta koraka:</p>
+        <ul>
+          <li><b>Toplinska analiza:</b> nestacionarni prijenos topline s pomičnim Goldakovim izvorom (dvostruki elipsoid), uz svojstva materijala ovisna o temperaturi te gubitke konvekcijom i zračenjem.</li>
+          <li><b>Mehanička analiza:</b> izračunato temperaturno polje učitava se kao opterećenje, uz elastoplastični model materijala, pa se nakon hlađenja dobivaju zaostala naprezanja i deformacije.</li>
+        </ul>
+        <p>Pripremu ulaznih datoteka s različitim parametrima i čitanje rezultata (.frd) automatiziraju Python skripte. Rezultati se koriste na tri načina: za provjeru t8/5 iz norme usporedbom sa simuliranim toplinskim ciklusom, za zamjenu pojednostavljene procjene naprezanja na ovoj stranici, i za generiranje dodatnih podataka za model strojnog učenja.</p>
+      </details></li>
     <li><b>Planirani pokusi</b><span>Namjerno izazivanje nepovoljnih uvjeta (hladan ili vlažan komad, prevelik ili premalen unos topline) i mjerenje zaostalih naprezanja i grešaka.</span>
       <details class="how"><summary>Kako se radi</summary><p>Plan pokusa (faktorski ili Taguchijev) da se s najmanje uzoraka obuhvati utjecaj temperature komada, unosa topline, vlažnosti i predgrijavanja. Svaki uzorak dobiva zapis ulaza i izmjerenih rezultata, što čini skup podataka za fazu 3.</p></details></li>
     <li><b>Model strojnog učenja</b><span>Treniranje modela na izmjerenim podacima; zamjena demo pravila stvarnim predviđanjem.</span>
-      <details class="how"><summary>Kako se radi</summary><p>Zbog malog broja uzoraka kao ulazi koriste se i fizikalne veličine (Q, t8/5, CE), a ne samo sirovi parametri. Usporedit će se jednostavniji modeli (regresija, random forest) s neuronskom mrežom, uz unakrsnu validaciju. Skup podataka može se proširiti MKE simulacijama.</p></details></li>
+      <details class="how"><summary>Kako se radi</summary><p>Zbog malog broja uzoraka kao ulazi koriste se i fizikalne veličine (Q, t8/5, CE), a ne samo sirovi parametri. Usporedit će se jednostavniji modeli (regresija, random forest) s neuronskom mrežom, uz unakrsnu validaciju. Skup podataka proširuje se rezultatima simulacija iz CalculiX-a, što je posebno važno jer je eksperimentalnih uzoraka malo.</p></details></li>
     <li><b>Prilagodba zavarivaču</b><span>Uključivanje stvarno postignutih parametara pojedinog zavarivača u preporuku.</span>
       <details class="how"><summary>Kako se radi</summary><p>Za svakog zavarivača bilježi se razlika između zadanih i stvarno postignutih parametara (npr. sustavno brže vođenje). Program tu razliku uzima u obzir, pa preporuka postaje prilagođena osobi, a ne samo WPS-u.</p></details></li>
   </ol>
