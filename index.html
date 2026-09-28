@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Provjera parametara zavarivanja – demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E8ECEF; --panel:#F6F8F9; --ink:#17212B; --muted:#56646F; --line:#C3CCD3;
+  --steel:#8A98A4; --straw:#D6AE55; --bronze:#A8622A; --violet:#6B3F7A; --blue:#2F5C9A;
+  --ok:#3D7A55; --warn:#A8622A; --bad:#9A2F2F;
+  --sans:"Barlow",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --cond:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#12181E; --panel:#1B232B; --ink:#E3E8EC; --muted:#97A4AE; --line:#34414C;
+    --blue:#6E9BD6; --ok:#6DB388; --warn:#D39456; --bad:#E07A7A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#12181E; --panel:#1B232B; --ink:#E3E8EC; --muted:#97A4AE; --line:#34414C;
+  --blue:#6E9BD6; --ok:#6DB388; --warn:#D39456; --bad:#E07A7A;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+
+header.top{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;border-bottom:2px solid var(--ink);padding-bottom:14px}
+header.top h1{font-family:var(--cond);font-weight:700;font-size:clamp(2rem,4.6vw,3.4rem);line-height:1;margin:0;letter-spacing:-.01em}
+header.top p{margin:8px 0 0;color:var(--muted);max-width:62ch}
+.stamp{font-family:var(--cond);font-weight:600;border:2px solid var(--bronze);color:var(--bronze);padding:4px 10px;transform:rotate(-3deg);white-space:nowrap}
+
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:28px;margin-top:28px}
+@media (max-width:880px){.grid{grid-template-columns:1fr}}
+
+.sheet{background:var(--panel);border:1px solid var(--line)}
+.sheet h2{font-family:var(--cond);font-weight:600;font-size:1.35rem;margin:0;padding:12px 18px;border-bottom:1px solid var(--line)}
+fieldset{border:0;border-bottom:1px solid var(--line);margin:0;padding:14px 18px 16px}
+fieldset:last-child{border-bottom:0}
+legend{float:left;width:100%;font-family:var(--cond);font-weight:600;font-size:1.05rem;color:var(--muted);margin-bottom:8px}
+.fields{clear:both;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 14px}
+label{display:flex;flex-direction:column;font-size:.88rem;color:var(--muted);gap:3px}
+label.key{grid-column:1/-1;color:var(--ink);font-weight:600}
+input,select{font:inherit;font-size:1rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);padding:7px 9px;border-radius:2px;width:100%}
+label.key input{border:2px solid var(--blue);font-size:1.15rem;font-weight:600}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--blue);outline-offset:1px}
+.hint{font-size:.82rem;color:var(--muted);margin:6px 0 0}
+
+.results{display:flex;flex-direction:column;gap:28px}
+.gauge{padding:18px}
+.gauge .score{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.gauge .num{font-family:var(--cond);font-weight:700;font-size:4.2rem;line-height:1}
+.gauge .verdict{font-family:var(--cond);font-weight:600;font-size:1.5rem}
+.tint{position:relative;height:22px;margin:14px 0 4px;background:linear-gradient(90deg,#C9CFD4 0%,#E3CF8E 18%,var(--straw) 32%,var(--bronze) 52%,var(--violet) 72%,var(--blue) 100%);border:1px solid var(--line)}
+.tint .pin{position:absolute;top:-7px;width:4px;height:34px;background:var(--ink);transform:translateX(-2px);transition:left .35s ease}
+.tint-scale{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted)}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border-top:1px solid var(--line)}
+.metric{padding:12px 18px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.metric b{display:block;font-family:var(--cond);font-weight:600;font-size:1.7rem;line-height:1.1}
+.metric span{font-size:.85rem;color:var(--muted)}
+
+.causes{padding:6px 18px 16px}
+.cause{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:12px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:.93rem}
+.cause:last-child{border-bottom:0}
+.bar{height:8px;background:var(--bg);border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--bronze)}
+
+.reco{padding:16px 18px}
+.reco table{width:100%;border-collapse:collapse;font-size:.95rem}
+.reco th,.reco td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
+.reco th{font-weight:500;color:var(--muted)}
+.reco td.chg{font-weight:600;color:var(--blue)}
+.reco .note{margin:10px 0 0;font-size:.9rem}
+button{font:inherit;font-weight:600;cursor:pointer;background:var(--ink);color:var(--panel);border:0;padding:9px 16px;border-radius:2px;margin-top:12px}
+
+section.compare{margin-top:44px}
+section.compare h2,section.plan h2{font-family:var(--cond);font-weight:700;font-size:2rem;margin:0 0 4px}
+section.compare > p,section.plan > p{color:var(--muted);margin:0 0 18px;max-width:70ch}
+.cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0;border:1px solid var(--line);background:var(--panel)}
+.cmp > div{padding:16px 18px}
+.cmp > div + div{border-left:1px solid var(--line)}
+@media (max-width:640px){.cmp{grid-template-columns:1fr}.cmp > div + div{border-left:0;border-top:1px solid var(--line)}}
+.cmp h3{font-family:var(--cond);font-weight:600;font-size:1.3rem;margin:0 0 8px}
+.cmp dl{display:grid;grid-template-columns:auto auto;justify-content:space-between;gap:4px 16px;margin:12px 0 0}
+.cmp dt{color:var(--muted)} .cmp dd{margin:0;font-weight:600;text-align:right}
+.chartbox{background:var(--panel);border:1px solid var(--line);border-top:0;padding:12px 10px 6px;overflow-x:auto}
+.chartbox svg{display:block;width:100%;min-width:520px;height:auto}
+.chartbox svg text{fill:var(--muted);font-family:var(--sans);font-size:12px}
+
+section.plan{margin-top:48px}
+ol.steps{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));border-top:2px solid var(--ink)}
+ol.steps li{padding:14px 16px 16px 0;counter-increment:s}
+ol.steps li::before{content:counter(s);font-family:var(--cond);font-weight:700;font-size:2.2rem;line-height:1;color:var(--steel);display:block;margin-bottom:4px}
+ol.steps li.now::before{color:var(--bronze)}
+ol.steps b{display:block;font-weight:600}
+ol.steps span{color:var(--muted);font-size:.93rem}
+footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+@media (prefers-reduced-motion:reduce){.tint .pin{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <h1>Provjera parametara zavarivanja</h1>
+    <p>Upiši stvarne uvjete na radnom mjestu i parametre iz WPS-a. Program procjenjuje rizik od grešaka i zaostalih naprezanja te predlaže korekciju parametara.</p>
+  </div>
+  <div class="stamp">Demo verzija</div>
+</header>
+
+<div class="grid">
+  <!-- ULAZI -->
+  <form class="sheet" id="f" autocomplete="off" onsubmit="return false">
+    <h2>Ulazni podaci</h2>
+    <fieldset>
+      <legend>Stanje komada neposredno prije zavarivanja</legend>
+      <div class="fields">
+        <label class="key">Izmjerena temperatura komada, °C
+          <input type="number" id="T0" value="12" step="1" min="-20" max="300">
+        </label>
+        <label>Okolna temperatura, °C<input type="number" id="Ta" value="18" step="1"></label>
+        <label>Relativna vlažnost, %<input type="number" id="RH" value="70" step="1" min="5" max="100"></label>
+      </div>
+      <p class="hint">Mjeri se kontaktnim termometrom ili termokredom uz mjesto zavarivanja, a ne "po osjećaju".</p>
+    </fieldset>
+    <fieldset>
+      <legend>Materijal i spoj</legend>
+      <div class="fields">
+        <label>Materijal
+          <select id="mat">
+            <option value="S235JR">S235JR</option>
+            <option value="S355J2" selected>S355J2</option>
+            <option value="S460M">S460M</option>
+            <option value="S690QL">S690QL</option>
+          </select>
+        </label>
+        <label>Granica tečenja Re, MPa<input type="number" id="Re" value="355"></label>
+        <label>Ekvivalent ugljika CE<input type="number" id="CE" value="0.43" step="0.01"></label>
+        <label>Debljina lima, mm<input type="number" id="d" value="12" min="2" step="1"></label>
+        <label>Vrsta spoja
+          <select id="joint"><option value="butt">Sučeljeni</option><option value="fillet">Kutni (T-spoj)</option></select>
+        </label>
+        <label>Ukliještenost konstrukcije
+          <select id="restr"><option value="low">Mala</option><option value="mid" selected>Srednja</option><option value="high">Velika</option></select>
+        </label>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Parametri zavarivanja (WPS)</legend>
+      <div class="fields">
+        <label>Postupak
+          <select id="proc"><option value="MAG">MAG (135)</option><option value="TIG">TIG (141)</option><option value="REL">REL (111)</option></select>
+        </label>
+        <label>Struja I, A<input type="number" id="I" value="260" step="5"></label>
+        <label>Napon U, V<input type="number" id="U" value="27" step="0.5"></label>
+        <label>Brzina v, cm/min<input type="number" id="v" value="25" step="1"></label>
+        <label>Propisano predgrijavanje, °C<input type="number" id="Tp" value="50" step="5"></label>
+      </div>
+    </fieldset>
+  </form>
+
+  <!-- REZULTATI -->
+  <div class="results" aria-live="polite">
+    <div class="sheet">
+      <h2>Procjena</h2>
+      <div class="gauge">
+        <div class="score"><span class="num" id="risk">–</span><span class="verdict" id="verdict">–</span></div>
+        <div class="tint" role="img" id="tint" aria-label="Indeks rizika"><div class="pin" id="pin" style="left:0"></div></div>
+        <div class="tint-scale"><span>nizak rizik</span><span>skala u bojama popuštanja čelika</span><span>visok rizik</span></div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><b id="mQ">–</b><span>unos topline, kJ/mm</span></div>
+        <div class="metric"><b id="mT85">–</b><span id="mT85l">vrijeme hlađenja t8/5, s</span></div>
+        <div class="metric"><b id="mDew">–</b><span>rosište zraka, °C</span></div>
+        <div class="metric"><b id="mSL">–</b><span>uzdužno zaostalo naprezanje, MPa</span></div>
+        <div class="metric"><b id="mST">–</b><span>poprečno zaostalo naprezanje, MPa</span></div>
+      </div>
+      <div class="causes" id="causes"></div>
+    </div>
+
+    <div class="sheet">
+      <h2>Preporuka za zavarivača</h2>
+      <div class="reco" id="reco"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USPOREDBA -->
+<section class="compare">
+  <h2>Isti parametri, različit komad</h2>
+  <p>Dva dijela iste šarže: jedan je stajao na suncu, drugi u sjeni. Oba se zavaruju prema istom WPS-u, a rezultat se razlikuje zbog početne temperature komada.</p>
+  <div class="cmp">
+    <div>
+      <h3>Komad A, na suncu</h3>
+      <label>Temperatura komada, °C<input type="number" id="TA" value="38"></label>
+      <dl id="dA"></dl>
+    </div>
+    <div>
+      <h3>Komad B, u sjeni</h3>
+      <label>Temperatura komada, °C<input type="number" id="TB" value="6"></label>
+      <dl id="dB"></dl>
+    </div>
+  </div>
+  <div class="chartbox"><svg id="chart" viewBox="0 0 640 270" role="img" aria-label="Vrijeme hlađenja t8/5 u ovisnosti o temperaturi komada"></svg></div>
+</section>
+
+<!-- PLAN -->
+<section class="plan">
+  <h2>Plan razvoja</h2>
+  <p>Ova stranica je prva faza. Pravila procjene ovdje su pojednostavljena i služe za prikaz ideje; u kasnijim fazama zamjenjuje ih model treniran na pokusima provedenim na Katedri za zavarivanje.</p>
+  <ol class="steps">
+    <li class="now"><b>Kalkulator i sučelje</b><span>Unos topline i t8/5 prema EN 1011-2, rosište, provjera predgrijavanja, prototip preporuke.</span></li>
+    <li><b>Planirani pokusi</b><span>Namjerno izazivanje nepovoljnih uvjeta (hladan ili vlažan komad, prevelik ili premalen unos topline) i mjerenje zaostalih naprezanja i grešaka.</span></li>
+    <li><b>Model strojnog učenja</b><span>Treniranje modela na izmjerenim podacima; zamjena demo pravila stvarnim predviđanjem.</span></li>
+    <li><b>Prilagodba zavarivaču</b><span>Uključivanje stvarno postignutih parametara pojedinog zavarivača u preporuku.</span></li>
+  </ol>
+</section>
+
+<footer>
+  Demo prototip za diplomski rad. Izračuni unosa topline i t8/5 slijede pojednostavljene izraze iz EN 1011-2; procjena zaostalih naprezanja i indeks rizika su orijentacijski i nisu zamjena za WPS ni za mjerenje.
+</footer>
+</div>
+
+<script>
+const MAT = {
+  S235JR:{Re:235,CE:0.35,Tp:0,  tmin:6, tmax:30},
+  S355J2:{Re:355,CE:0.43,Tp:50, tmin:8, tmax:25},
+  S460M: {Re:460,CE:0.45,Tp:75, tmin:8, tmax:20},
+  S690QL:{Re:690,CE:0.55,Tp:100,tmin:5, tmax:15}
+};
+const K = {MAG:0.8, TIG:0.6, REL:0.8};
+const $ = id => document.getElementById(id);
+const clamp = (x,a=0,b=1) => Math.min(b, Math.max(a, x));
+const fmt = (x,n=1) => Number.isFinite(x) ? x.toLocaleString('hr-HR',{minimumFractionDigits:n,maximumFractionDigits:n}) : '–';
+
+function read(){
+  const g = id => parseFloat($(id).value);
+  const m = MAT[$('mat').value];
+  return {T0:g('T0'),Ta:g('Ta'),RH:g('RH'),Re:g('Re'),CE:g('CE'),d:g('d'),
+    joint:$('joint').value,restr:$('restr').value,proc:$('proc').value,
+    I:g('I'),U:g('U'),v:g('v'),Tp:g('Tp'),tmin:m.tmin,tmax:m.tmax};
+}
+
+function dewPoint(T,RH){
+  const g = Math.log(clamp(RH,1,100)/100) + 17.62*T/(243.12+T);
+  return 243.12*g/(17.62-g);
+}
+
+function calc(p){
+  const T0 = Math.min(p.T0, 400);
+  const vmm = p.v*10/60;                         // mm/s
+  const Q = K[p.proc]*p.U*p.I/vmm/1000;          // kJ/mm
+  const a = 1/(500-T0), b = 1/(800-T0);
+  const F = p.joint==='butt' ? 0.9 : 0.67;
+  const t3 = (6700-5*T0)*Q*(a-b)*F;
+  const t2 = (4300-4.3*T0)*1e5*(Q*Q/(p.d*p.d))*(a*a-b*b)*F;
+  const dt = Math.sqrt((4300-4.3*T0)*1e5*Q*(a*a-b*b)/((6700-5*T0)*(a-b)));
+  const is2D = p.d < dt;
+  const t85 = is2D ? t2 : t3;
+  const Td = dewPoint(p.Ta,p.RH);
+  const Tp = Math.max(p.Tp,5);
+
+  const causes = [
+    {k:'Prebrzo hlađenje (zakaljivanje, hladne pukotine)', w:.65,
+      r: t85<p.tmin ? clamp((p.tmin-t85)/p.tmin*1.5)*clamp((p.CE-0.25)/0.25) : 0},
+    {k:'Presporo hlađenje (pad žilavosti, veće deformacije)', w:.35,
+      r: t85>p.tmax ? clamp((t85-p.tmax)/p.tmax) : 0},
+    {k:'Komad hladniji od propisanog predgrijavanja', w:.5,
+      r: T0<Tp ? clamp((Tp-T0)/Math.max(Tp,40)) : 0},
+    {k:'Moguća kondenzacija vlage na komadu (vodik)', w:.45,
+      r: T0<Td+3 ? clamp((Td+3-T0)/5) : 0},
+    {k:'Ukliještenost konstrukcije', w:.35,
+      r: {low:.1,mid:.35,high:.7}[p.restr]*clamp(p.CE/0.5)}
+  ];
+  const risk = 100*(1 - causes.reduce((acc,c)=>acc*(1-c.w*c.r),1));
+  const sL = p.Re;                                       // tip I, uzdužno ~ Re
+  const sT = p.Re*{low:.3,mid:.5,high:.8}[p.restr];
+  return {Q,t85,is2D,Td,risk,causes,sL,sT};
+}
+
+function verdict(r){
+  if(r<25) return ['Prihvatljivo','var(--ok)'];
+  if(r<50) return ['Oprez','var(--warn)'];
+  return ['Korigiraj parametre','var(--bad)'];
+}
+
+function recommend(p, base){
+  let best = null;
+  const temps = [p.T0]; for(let t=Math.ceil(Math.max(p.T0,0)/10)*10+10; t<=250; t+=10) temps.push(t);
+  for(let fi=0.8; fi<=1.2001; fi+=0.05)
+  for(let fv=0.7; fv<=1.3001; fv+=0.05)
+  for(const T of temps){
+    const q = {...p, I:p.I*fi, v:p.v*fv, T0:T};
+    const c = calc(q);
+    const cost = c.risk + 8*(Math.abs(fi-1)+Math.abs(fv-1)) + 0.04*(T-p.T0);
+    if(!best || cost<best.cost) best = {cost,I:q.I,v:q.v,T,c};
+  }
+  if(best.c.risk >= base.risk - 1) return null;
+  return best;
+}
+
+function render(){
+  const p = read();
+  const r = calc(p);
+  $('risk').textContent = Math.round(r.risk);
+  const [vt,col] = verdict(r.risk);
+  $('verdict').textContent = vt; $('verdict').style.color = col;
+  $('pin').style.left = clamp(r.risk,0,100)+'%';
+  $('tint').setAttribute('aria-label','Indeks rizika '+Math.round(r.risk)+' od 100');
+  $('mQ').textContent = fmt(r.Q,2);
+  $('mT85').textContent = fmt(r.t85,1);
+  $('mT85l').textContent = `t8/5, s (${r.is2D?'2D':'3D'} odvođenje; cilj ${p.tmin}–${p.tmax})`;
+  $('mDew').textContent = fmt(r.Td,1);
+  $('mSL').textContent = '≈ '+Math.round(r.sL);
+  $('mST').textContent = '≈ '+Math.round(r.sT);
+
+  $('causes').innerHTML = r.causes.map(c=>`
+    <div class="cause"><span>${c.k}</span>
+    <div class="bar" title="${Math.round(c.r*100)} %"><i style="width:${Math.round(c.r*100)}%"></i></div></div>`).join('');
+
+  const b = recommend(p, r);
+  if(!b){
+    $('reco').innerHTML = `<p class="note">Uz trenutne uvjete parametri iz WPS-a su prihvatljivi. Zavarivanje može početi.</p>`;
+  } else {
+    const row = (n,a,c,u,d=0)=>{
+      const same = Math.abs(a-c) < (d?0.05:0.5);
+      return `<tr><td>${n}</td><td>${fmt(a,d)} ${u}</td><td class="${same?'':'chg'}">${fmt(c,d)} ${u}</td></tr>`;
+    };
+    $('reco').innerHTML = `<table>
+      <tr><th>Veličina</th><th>Sada</th><th>Preporuka</th></tr>
+      ${row('Temperatura komada (predgrijavanje)',p.T0,b.T,'°C')}
+      ${row('Struja',p.I,Math.round(b.I/5)*5,'A')}
+      ${row('Brzina zavarivanja',p.v,b.v,'cm/min')}
+      <tr><td>Indeks rizika</td><td>${Math.round(r.risk)}</td><td class="chg">${Math.round(b.c.risk)}</td></tr>
+      <tr><td>t8/5</td><td>${fmt(r.t85)} s</td><td>${fmt(b.c.t85)} s</td></tr>
+      </table>
+      <p class="note">Preporuka ostaje unutar ±20 % struje i ±30 % brzine. Prije primjene provjeri je li unutar granica odobrenog WPS-a.</p>
+      <button type="button" id="apply">Primijeni preporuku</button>`;
+    $('apply').onclick = ()=>{ $('T0').value=b.T; $('I').value=Math.round(b.I/5)*5; $('v').value=Math.round(b.v); render(); };
+  }
+  renderCompare(p);
+}
+
+function dl(el, p, T){
+  const c = calc({...p, T0:T});
+  const [vt,col] = verdict(c.risk);
+  el.innerHTML = `<dt>t8/5</dt><dd>${fmt(c.t85)} s</dd>
+    <dt>Kondenzacija</dt><dd>${T<c.Td+3?'moguća':'ne'}</dd>
+    <dt>Indeks rizika</dt><dd style="color:${col}">${Math.round(c.risk)} (${vt.toLowerCase()})</dd>`;
+  return c;
+}
+
+function renderCompare(p){
+  const TA = parseFloat($('TA').value), TB = parseFloat($('TB').value);
+  const cA = dl($('dA'),p,TA), cB = dl($('dB'),p,TB);
+  // grafikon t8/5(T0)
+  const W=640,H=270,L=48,R=16,T=14,B=38, x0=-10,x1=200;
+  const pts=[]; for(let t=x0;t<=x1;t+=2) pts.push([t,calc({...p,T0:t}).t85]);
+  const ymax = Math.max(p.tmax*1.3, ...pts.map(q=>q[1]), cA.t85, cB.t85)*1.05;
+  const X=t=>L+(t-x0)/(x1-x0)*(W-L-R), Y=y=>H-B-(y/ymax)*(H-T-B);
+  const css = getComputedStyle(document.documentElement);
+  const ink=css.getPropertyValue('--ink'), line=css.getPropertyValue('--line'), blue=css.getPropertyValue('--blue'), bronze=css.getPropertyValue('--bronze'), straw=css.getPropertyValue('--straw');
+  let s = `<rect x="${L}" y="${Y(p.tmax)}" width="${W-L-R}" height="${Y(p.tmin)-Y(p.tmax)}" fill="${straw}" opacity=".22"/>`;
+  s += `<text x="${W-R-4}" y="${Y(p.tmax)+14}" text-anchor="end">ciljano područje t8/5</text>`;
+  for(let t=0;t<=x1;t+=50){ s+=`<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H-B}" stroke="${line}"/><text x="${X(t)}" y="${H-B+16}" text-anchor="middle">${t}</text>`; }
+  const step = ymax>60?20:ymax>30?10:5;
+  for(let y=0;y<=ymax;y+=step){ s+=`<text x="${L-6}" y="${Y(y)+4}" text-anchor="end">${y}</text>`; }
+  s += `<line x1="${L}" x2="${W-R}" y1="${H-B}" y2="${H-B}" stroke="${ink}"/>`;
+  s += `<polyline fill="none" stroke="${blue}" stroke-width="2.5" points="${pts.map(q=>X(q[0])+','+Y(q[1])).join(' ')}"/>`;
+  const mark=(t,c,lab)=>`<circle cx="${X(t)}" cy="${Y(c.t85)}" r="6" fill="${bronze}"/><text x="${X(t)+9}" y="${Y(c.t85)-8}" style="fill:${ink};font-weight:600">${lab}</text>`;
+  if(TA>=x0&&TA<=x1) s+=mark(TA,cA,'A');
+  if(TB>=x0&&TB<=x1) s+=mark(TB,cB,'B');
+  s += `<text x="${(L+W-R)/2}" y="${H-4}" text-anchor="middle">temperatura komada, °C</text>`;
+  s += `<text transform="translate(12 ${(T+H-B)/2}) rotate(-90)" text-anchor="middle">t8/5, s</text>`;
+  $('chart').innerHTML = s;
+}
+
+$('mat').addEventListener('change',()=>{
+  const m = MAT[$('mat').value];
+  $('Re').value=m.Re; $('CE').value=m.CE; $('Tp').value=m.Tp; render();
+});
+document.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',render));
+render();
+</script>
+</body>
+</html>
