@@ -182,9 +182,10 @@ footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid 
         <div class="metric"><b id="mQ">–</b><span>unos topline, kJ/mm</span></div>
         <div class="metric"><b id="mT85">–</b><span id="mT85l">vrijeme hlađenja t8/5, s</span></div>
         <div class="metric"><b id="mDew">–</b><span>rosište zraka, °C</span></div>
-        <div class="metric"><b id="mSL">–</b><span>uzdužno zaostalo naprezanje, MPa</span></div>
-        <div class="metric"><b id="mST">–</b><span>poprečno zaostalo naprezanje, MPa</span></div>
+        <div class="metric"><b id="mSL">–</b><span>uzdužno zaostalo naprezanje, MPa (pojednostavljeno)</span></div>
+        <div class="metric"><b id="mST">–</b><span>poprečno zaostalo naprezanje, MPa (pojednostavljeno)</span></div>
       </div>
+      <p class="hint" style="padding:0 18px">Zaostala naprezanja su za sada gruba procjena (uzdužno ≈ Re, poprečno ovisno o ukliještenosti) i bit će zamijenjena rezultatima mjerenja.</p>
       <div class="causes" id="causes"></div>
     </div>
 
@@ -309,8 +310,25 @@ function recommend(p, base){
   return best;
 }
 
+function invalid(p){
+  const need = {T0:'temperatura komada',Ta:'okolna temperatura',RH:'relativna vlažnost',Re:'granica tečenja',CE:'CE',d:'debljina lima',I:'struja',U:'napon',v:'brzina zavarivanja',Tp:'propisano predgrijavanje'};
+  for(const k in need){ if(!Number.isFinite(p[k])) return 'Upiši vrijednost: '+need[k]+'.'; }
+  if(p.d<=0||p.I<=0||p.U<=0||p.v<=0) return 'Debljina, struja, napon i brzina moraju biti veći od nule.';
+  if(p.RH<1||p.RH>100) return 'Relativna vlažnost mora biti između 1 i 100 %.';
+  if(p.T0>=400) return 'Temperatura komada mora biti ispod 400 °C.';
+  return null;
+}
+
 function render(){
   const p = read();
+  const err = invalid(p);
+  if(err){
+    $('risk').textContent='–'; $('verdict').textContent=err; $('verdict').style.color='var(--bad)';
+    ['mQ','mT85','mDew','mSL','mST'].forEach(id=>$(id).textContent='–');
+    $('causes').innerHTML=''; $('reco').innerHTML='<p class="note">Preporuka će se prikazati kad su svi ulazni podaci ispravni.</p>';
+    $('dA').innerHTML=''; $('dB').innerHTML=''; $('chart').innerHTML='';
+    return;
+  }
   const r = calc(p);
   $('risk').textContent = Math.round(r.risk);
   const [vt,col] = verdict(r.risk);
@@ -330,7 +348,9 @@ function render(){
 
   const b = recommend(p, r);
   if(!b){
-    $('reco').innerHTML = `<p class="note">Uz trenutne uvjete parametri iz WPS-a su prihvatljivi. Zavarivanje može početi.</p>`;
+    $('reco').innerHTML = r.risk<25
+      ? `<p class="note">Uz trenutne uvjete parametri iz WPS-a su prihvatljivi. Zavarivanje može početi.</p>`
+      : `<p class="note">Unutar dopuštenih promjena struje, brzine i predgrijavanja nije pronađena bolja kombinacija. Potrebna je stručna procjena, npr. promjena dodatnog materijala ili WPS-a.</p>`;
   } else {
     const row = (n,a,c,u,d=0)=>{
       const same = Math.abs(a-c) < (d?0.05:0.5);
@@ -362,6 +382,7 @@ function dl(el, p, T){
 
 function renderCompare(p){
   const TA = parseFloat($('TA').value), TB = parseFloat($('TB').value);
+  if(!Number.isFinite(TA)||!Number.isFinite(TB)||TA>=400||TB>=400){ $('dA').innerHTML=$('dB').innerHTML='<dt>Upiši temperaturu komada</dt><dd></dd>'; $('chart').innerHTML=''; return; }
   const cA = dl($('dA'),p,TA), cB = dl($('dB'),p,TB);
   // grafikon t8/5(T0)
   const W=640,H=270,L=48,R=16,T=14,B=38, x0=-10,x1=200;
